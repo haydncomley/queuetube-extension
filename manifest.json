@@ -1,28 +1,30 @@
 {
-    // Comments are accepted in the manifest, even though it is JSON.
     "manifest_version": 3,
-    "name": "Chrome Extension v3 Starter",
-    "description": "A minimal example of a chrome extension using manifest v3",
+    "name": "QueueTube",
+    "description": "Basically just Discords YouTube queue app, but better.",
     "version": "0.0.1",
     "icons": {
-        "16": "logo/logo-16.png",
-        "48": "logo/logo-48.png",
-        "128": "logo/logo-128.png"
+        "16": "assets/logo-16.png",
+        "48": "assets/logo-48.png",
+        "128": "assets/logo-128.png"
     },
-    "options_page": "settings/settings.html",
+    "options_page": "extension/options/options.html",
     "action": {
-        "default_title": "Chrome Addon v3 Starter",
-        "default_popup": "popup/popup.html"
+        "default_title": "QueueTube",
+        "default_popup": "extension/action/action.html"
     },
     "permissions": [],
     "host_permissions": [
         "*://*/*"
     ],
     "background": {
-        "service_worker": "service-worker.js"
+        "service_worker": "extension/core/service-worker.js"
     },
     "content_scripts": [{
-        "js": ["foreground.js"],
-        "matches": ["https://github.com/*"]
+        "js": ["extension/core/index.js"],
+        "matches": [
+            "https://youtube.com/*",
+            "https://www.youtube.com/*"
+        ]
     }]
 }
