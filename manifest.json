@@ -22,9 +22,10 @@
     },
     "content_scripts": [{
         "js": ["extension/core/index.js"],
+        "css": ["extension/core/index.css"],
         "matches": [
-            "https://youtube.com/*",
-            "https://www.youtube.com/*"
+            "https://youtube.com/watch*",
+            "https://www.youtube.com/watch*"
         ]
     }]
 }

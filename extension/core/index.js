@@ -1,7 +1,50 @@
-// This script gets injected into any opened page
-// whose URL matches the pattern defined in the manifest
-// (see "content_script" key).
-// Several foreground scripts can be declared
-// and injected into the same or different pages.
+(()=>{var k=()=>{let e="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",t="",r=e.length;for(let l=0;l<10;l++)t+=e.charAt(Math.floor(Math.random()*r));return t},X=k(),K=e=>{X=e},ee=e=>e.map(t=>JSON.stringify(Object.hasOwn(t,"get")&&t.get())).join("");var N=e=>{let t="",r=!1,l={},i=o=>{},a=()=>{let o=document.querySelector(`[data-nice-id="${t}"]`);!o||r||(r=!0,setTimeout(()=>{let u=i(t);u&&o.replaceWith(u.children[0]),r=!1},0))};return(o,u)=>(t=k(),K(t),l=o??{},i=e(l,u),{id:t,type:"component",properties:o,render:i,markDirty:a,key:u??t})},Q=(e,t)=>{let r=N(e)();if(t&&typeof window<"u"){let l=t?document.querySelector(t):void 0;if(!l)throw new Error(`Failed to attach - Element "${t}" not found in the DOM.`);r.markDirty=()=>{let i=r.render(k());if(i){for(;l.firstChild;)l.removeChild(l.firstChild);window?Array.from(i.hydrate().children).forEach(a=>{l.appendChild(a)}):l.innerHTML=i.html}},r.markDirty()}else return{html:r.render("nice-app-root").html,id:"nice-app-root",hydrate:l=>{let i=document.querySelector(`#${l}`);if(!i)throw new Error(`Failed to attach - Element "${t}" not found in the DOM.`);r.markDirty=()=>{let a=r.render(k());if(a){for(;i.firstChild;)i.removeChild(i.firstChild);window?Array.from(a.hydrate().children).forEach(o=>{i.appendChild(o)}):i.innerHTML=a.html}},r.markDirty()}}},te=(e,...t)=>r=>{let l=`<!-- ${r} BEGIN -->`,i=`<!-- ${r} END -->`,a="",o={},u={};e.forEach((n,d)=>{let p=t[d];if(a+=n,p===void 0)return;let y=C(n),f=Math.random().toString(36).substring(7);if(typeof p!="object"){y&&!n.endsWith('"')?a+=`"${p}"`:a+=p;return}switch(p.type){case"component":a+=f,o[f]=p.render(p.id);break;case"state":a+=f,u[f]=p;break}}),Object.keys(o).forEach(n=>{a=a.replace(n,o[n].html.replace(/(<.+)( )/,`$1 data-reattach-child="${n}" `))}),Object.keys(u).forEach(n=>{let d=a.split(n)[0],p=C(d),y=u[n].get(),f=y,x=1;if(y)if(typeof y=="object"&&y.type==="component"){let v=y;f=v.render(v.id).html}else Array.isArray(y)&&(x=y.length,f=y.map(v=>{if(typeof v=="object"&&v.type==="component"){let q=v;return q.render(q.id).html}else return v}).join(""));let S=p?`"${f||""}" data-bind-${p}="${n}"`:`<!-- @ -->${f}<span style="display: none;" data-reattach-state="${n}" data-reattach-extras="${!!f&&x}"></span><!-- # -->`;a=a.replace(n,S)});let s=()=>{let n=re(a);return n.children[0].setAttribute("data-nice-id",r),Object.keys(u).forEach(d=>{n.querySelectorAll(`[data-reattach-state="${d}"]`).forEach(p=>{let y=p.getAttribute("data-reattach-extras");if(y&&y!=="false")for(let v=0;v<parseInt(y);v++)p.previousSibling?.remove();let f=u[d].get(),x=p.previousSibling,S=p.nextSibling;for(;x&&x.nodeType!==Node.COMMENT_NODE;)x=x.previousSibling;u[d].markers.push([x,S]),M(f,x,S)})}),Object.keys(o).forEach(d=>{n.querySelectorAll(`[data-reattach-child="${d}"]`).forEach(p=>{let y=o[d].hydrate().children[0];p.replaceWith(y)})}),n.querySelectorAll("*").forEach(d=>{Array.from(d.attributes).forEach(p=>{let y=p.name.match(/data-bind-(.+)$/);if(y){let f=y[1].trim(),x=p.value,S=f.startsWith("on-"),v=f.startsWith("set-"),q=f==="ref",E=u[x];if(!E)return;E.attributes[f]||(E.attributes[f]=[]),S?(d.removeAttribute(f),d.addEventListener(f.slice(3),O=>E.set(O))):v?(d.removeAttribute(f),E.listen(O=>{d[f.slice(4)]=O}),d[f.slice(4)]=E.get()):q?(d.removeAttribute(f),E.set(d)):(E.attributes[f].push(d),d.setAttribute(f,E.get()??"")),d.removeAttribute(p.name)}})}),n};return{html:a.trim(),hydrate:s}},M=(e,t,r)=>{let l=[],i=t.nextSibling;for(;i!==r;)l.push(i),i=i?.nextSibling;if(e&&typeof e=="object"&&e.type==="component"){let a=e,o=a.render(a.id);l.forEach(u=>u.remove()),o&&Array.from(o.hydrate().children).reverse().forEach(u=>t.after(u))}else{let a=Array.isArray(e)?e:[e],o=a.map(s=>{if(typeof s=="object"&&s.type==="component"){let n=s;return n.key??n.id}else return}).filter(s=>s!=null),u=a.map(s=>{let n=s;if(typeof s=="function"&&(n=s()),typeof n=="object"&&n.type==="component"){let d=n,p=d.render(d.id).hydrate();return p.children[0]&&n.key&&p.children[0].setAttribute("data-nice-key",n.key),p}else return n}).filter(s=>s!=null);o.length?(l.forEach(s=>{o.includes(s.getAttribute("data-nice-key"))||s.remove()}),u.reverse().forEach(s=>{if(s instanceof HTMLElement){let n=null;Array.from(s.children).reverse().forEach(d=>{t.parentElement?.querySelector(`[data-nice-key="${d.getAttribute("data-nice-key")}"]`)||(n??r).before(d),n=d})}else{let n=document.createTextNode(s);t.after(n)}})):(l.forEach(s=>s.remove()),u.reverse().forEach(s=>{if(s instanceof HTMLElement)Array.from(s.children).reverse().forEach(n=>t.after(n));else{let n=document.createTextNode(s);t.after(n)}}))}},re=e=>{let t=document.createElement("div");return t.innerHTML=e,t},C=e=>{let t=/.+ (.+)="?$/gm,r,l=[];for(;(r=t.exec(e))!==null;)r.index===t.lastIndex&&t.lastIndex++,r.forEach(i=>{l.push(i)});if(l.length===2)return l[1]},j=e=>{let t=e,r=k(),l=[],i=[],a=[],o={};return{id:r,type:"state",get:()=>t,set:u=>{let s=t;typeof e=="function"?s=u(t):s=u,s!==t&&(t=s,l.forEach(n=>n(s)),Object.entries(o).forEach(([n,d])=>{d.forEach(p=>{p.setAttribute(n,s??"")})}),a.forEach(([n,d])=>{M(t,n,d)}))},listen:u=>l.push(u),textNodes:i,markers:a,attributes:o}},D=(e,t)=>{let r=j(void 0),l,i=(t??[]).map(o=>o&&typeof o=="object"&&Object.hasOwn(o,"listen")?o:!1).filter(Boolean),a=o=>{let u=!!o&&!t,s=e(o),n=ee(i);s!==r.get()&&n!==l&&!u&&r.set(s)};return t?(i.forEach(o=>o.listen(a)),a()):r.listen(a),r},ne=e=>D(e||(()=>{})),oe=e=>{let t=Object.entries(e).reduce((r,[l,i])=>(r[l]=j(i),r),{});return r=>t[r]},P=(e,t)=>{let r=[];typeof e=="number"?r=Array.from({length:e},(a,o)=>o+1):Array.isArray(e)?r=[...e]:typeof e=="object"&&(r=Array.from(Object.entries(e)));let l=!1,i=r.map((a,o)=>{let u=t(a,o);return typeof u=="function"?(l=ae,u()):u});return l?i.reverse():i},ie=e=>typeof e=="object"&&Object.hasOwn(e,"get")?e.get():e;var A=j,m=D,g=te,b=N,H=ne,R=oe,c=ie,ae=typeof window<"u";var U={qtRoot:"r"};var h=R({user:void 0,session:void 0,queue:void 0});var I={player:"a",playerEmbed:"o",playerInActive:"e"};var T=500,W=b(()=>{let e=h("queue"),t=H(),r=A("");m(()=>{let i=c(e)?.playing?.index,a=c(e)?.list;if(typeof i!="number"||!a||!a.length)return;let o=a[i]?.id;o!==c(r)&&r.set(o)},[e]),m(()=>{let i=t.get();if(!i||!c(r))return;i.contentWindow?.location.replace(`https://www.youtube.com/embed/${c(r)}?autoplay=1&controls=1`);let a=()=>{if(!i?.contentDocument||!i.contentDocument.body)return setTimeout(a,T);let o=i.contentDocument.body.querySelector("video");if(!o)return setTimeout(a,T);document.body.querySelector(`[data-video-id="${c(r)}"]`)?.scrollIntoView({behavior:"smooth",block:"center",inline:"center"});let u=()=>{e.set({list:c(e)?.list||[],playing:{index:c(e)?.playing?.index||0,state:"playing"}})},s=()=>{e.set({list:c(e)?.list||[],playing:{index:c(e)?.playing?.index||0,state:"paused"}})},n=()=>{o.removeEventListener("play",u),o.removeEventListener("pause",s),o.removeEventListener("ended",n),e.set({list:c(e)?.list||[],playing:{index:(c(e)?.playing?.index||0)+1}})};o.addEventListener("play",u),o.addEventListener("pause",s),o.addEventListener("ended",n),u()};setTimeout(a,T)},[r,t]);let l=m(()=>[I.player,c(r)?"":I.playerInActive].join(" "),[r]);return g`
+    <div class=${l}>
+        <iframe ref=${t} class=${I.playerEmbed} title="YouTube video player" frameborder="0" allow="autoplay" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    </div>
+    `});var F={queueList:"d"};var w={queueItem:"i",done:"t",playing:"n",empty:"l"};var _=35,L=b(({details:e})=>{let t=h("queue"),r=m(()=>{if(!e)return"Queue Empty";let s=c(e).name;return s.length>_&&(s=s.slice(0,_)+"..."),s},[e]),l=m(()=>e?c(t)?.list.findIndex(s=>s.id===c(e)?.id)||0:-1,[t,e]),i=m(()=>c(e)?.id,[e]),a=m(()=>e?c(e).user:'Click "Add to Queue" to get started.',[e]),o=m(()=>{let s=c(l),n=[w.queueItem];if(s!==-1){let d=c(t)?.playing?.index===s,p=s<(c(t)?.playing?.index||-1);d&&n.push(w.playing),p&&n.push(w.done)}else n.push(w.empty);return n.join(" ")},[t,l]),u=m(()=>{t.set({list:c(t)?.list||[],playing:{index:c(l)}})});return g`
+    <li on-click=${u} class=${o} data-video-id=${i}>
+        <h1>${r}</h1>
+        <small>${a}</small>
+    </li>
+    `});var V=b(()=>{let e=h("queue"),t=m(()=>{let r=c(e);return r?.list.length?P(r.list,l=>L({details:l},l.id)):L({})},[e]);return g`
+    <ol class=${F.queueList}>
+        ${t}
+    </ol>
+    `});var $={inSession:"p",inSessionHeader:"g",inSessionContent:"s",inSessionSide:"b",inSessionSideActions:"v"};var z=b(()=>{let e=h("user"),t=h("session"),r=h("queue"),l=m(()=>c(e)?.name,[e]),i=m(()=>{let p=(c(t)?.participants.length??0)+1;return p==1?"1 person":`${p} people`},[t]),a=m(()=>c(t)?.id,[t]),o=m(()=>{let d=c(r)?.playing?.state;return d==="playing"?"- Playing...":d==="paused"?"- Paused.":""},[r]),u=m(()=>{let d=c(r);if(!d)return;let p=c(window.location.href).match(/(?:\?v=|\/embed\/|\.be\/)([A-Za-z0-9_-]{11})/)?.[1];if(!p)return;if(d.list.find(f=>f.id===p)){alert("This video is already in the queue.");return}r.set({playing:d.playing||{index:0},list:[...d.list,{user:c(l),id:p,name:window.document.title.replace(" - YouTube","")}]})}),s=m(()=>{let d=c(r);if(!d?.playing)return;let p=d.playing.index+1;p>=d.list.length||r.set({...d,playing:{index:p}})}),n=m(()=>{console.log("Leaving Session"),t.set(void 0)});return g`
+    <div class=${$.inSession}>
+        <div class=${$.inSessionHeader}>
+            <h1>Session: ${a}</h1>
+            <p><small>- ${i}</small></p>
+            <p><small>${o}</small></p>
+        </div>
 
-console.log("This prints to the console of the page (injected only if the page url matched)")
+        <div class=${$.inSessionContent}>
+            <aside class=${$.inSessionSide}>
+                ${V()}
+
+                <div class=${$.inSessionSideActions}>
+                    <button on-click=${u}>Add to Queue</button>
+                    <button on-click=${n}>Leave</button>
+                </div>
+            </aside>
+            <aside class=${$.inSessionSide}>
+                ${W()}
+            </aside>
+        </div>
+    </div>
+    `});var B={noSession:"c"};var J=b(()=>{let e=h("session"),t=h("queue"),r=A(""),l=m(()=>c(r).length?"Join Session":"Create Session",[r]),i=m(o=>{let u=o.target;r.set(u.value)}),a=m(()=>{c(r)||r.set(Math.random().toString(10).slice(-5)),t.set({list:[]}),e.set({id:c(r),participants:[]})});return g`
+    <div class=${B.noSession}>
+        <input on-input=${i} value=${r} placeholder="Session Name" />
+        <button on-click=${a}>${l}</button>
+    </div>
+    `});var G={noUser:"u"};var Y=b(()=>{let e=h("user"),t=A(""),r=m(i=>{let a=i.target;t.set(a.value)}),l=m(()=>{let i=c(t);if(!i)return alert("Name cant be empty!");e.set({name:i})});return g`
+    <div class=${G.noUser}>
+        <input on-input=${r} placeholder="Name" />
+        <button on-click=${l}>Save</button>
+    </div>
+    `});var Z=document.createElement("div");Z.id="QT";document.body.appendChild(Z);Q(()=>{let e=h("user"),t=h("session"),r=m(()=>(console.log("Re-rendering index",c(e),c(t)),c(e)?c(t)?z():J():Y()),[e,t]);return g`
+    <section class=${U.qtRoot}>
+        ${r}
+    </section>
+    `},"#QT");})();

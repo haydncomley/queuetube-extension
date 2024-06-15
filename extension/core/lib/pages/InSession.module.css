@@ -1,0 +1,31 @@
+.inSession {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.inSessionHeader {
+  display: flex;
+  gap: var(--gap);
+  align-items: center;
+  padding-left: var(--gap);
+}
+
+.inSessionContent {
+  display: flex;
+  gap: var(--gap);
+
+  .inSessionSide {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    overflow: hidden;
+    flex-grow: 1;
+
+    .inSessionSideActions {
+      display: flex;
+      gap: var(--gap);
+      justify-content: space-between;
+    }
+  }
+}

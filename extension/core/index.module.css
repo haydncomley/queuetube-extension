@@ -1,0 +1,61 @@
+.qtRoot {
+  --padding: 1.2rem;
+  --color: var(--yt-spec-text-primary);
+  --background: var(--yt-spec-base-background);
+  --background-alt: var(--yt-spec-badge-chip-background);
+  --shadow: 0 4px 32px 0 var(--yt-spec-static-overlay-background-light);
+  --border-radius: 1.2rem;
+  --gap: calc(var(--border-radius) * 0.5);
+  --border: 1px solid rgba(0, 0, 0, 0.1);
+  --font-normal: 400 1.4rem "Roboto", "Arial", sans-serif;
+  --font-title: 500 1.4rem "Roboto", "Arial", sans-serif;
+
+  position: fixed;
+  bottom: 0;
+  left: var(--padding);
+  padding: var(--padding);
+  background-color: var(--background);
+  color: var(--color);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  border: var(--border);
+  border-bottom: none;
+  z-index: 999999;
+  box-shadow: var(--shadow);
+  font: var(--font-normal);
+
+  @media (max-width: 800px) {
+    right: var(--padding);
+  }
+
+  h1 {
+    font: var(--font-title);
+  }
+
+  button {
+    background: var(--color);
+    color: var(--background);
+    font: var(--font-title);
+    padding: 0 1.6rem;
+    height: 3.6rem;
+    border: var(--border);
+    border-color: var(--background);
+    border-radius: 5rem;
+
+    &:hover {
+      cursor: pointer;
+    }
+
+    &:disabled {
+      pointer-events: none;
+      opacity: 0.5;
+    }
+  }
+
+  input {
+    height: 3.6rem;
+    padding: 0 1.6rem;
+    border: var(--border);
+    border-radius: 5rem;
+    font: var(--font-normal);
+  }
+}

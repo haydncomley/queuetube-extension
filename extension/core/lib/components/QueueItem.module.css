@@ -1,0 +1,29 @@
+.queueItem {
+  display: flex;
+  flex-direction: column;
+  transition: 0.1s ease;
+
+  &.done {
+    opacity: 0.3;
+  }
+
+  &.playing {
+    color: var(--yt-brand-youtube-red);
+    pointer-events: none;
+  }
+
+  &.empty {
+    pointer-events: none;
+  }
+
+  &:not(:last-child) {
+    padding-bottom: var(--gap);
+    margin-bottom: var(--gap);
+    border-bottom: var(--border);
+  }
+
+  &:hover {
+    opacity: 0.65;
+    cursor: pointer;
+  }
+}

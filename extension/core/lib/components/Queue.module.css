@@ -1,0 +1,12 @@
+.queueList {
+  display: flex;
+  flex-direction: column;
+  max-height: 20rem;
+  gap: var(--gap);
+  border-radius: var(--border-radius);
+  border: var(--border);
+  overflow: auto;
+  padding: var(--padding);
+  flex: 1;
+  list-style: none;
+}
