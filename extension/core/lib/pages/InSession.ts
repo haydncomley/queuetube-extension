@@ -1,7 +1,7 @@
 import { component, computed, render, state, valueOf } from "../../../_nice";
 import { Player } from "../components/Player";
 import { Queue } from "../components/Queue";
-import { dbLeaveSession, dbListenToQueue, dbUpdateQueue } from "../database";
+import { dbLeaveSession, dbListenToQueue, dbListenToSession, dbUpdateQueue } from "../database";
 import { globalStore } from "../store";
 
 import styles from './InSession.module.css';
@@ -26,6 +26,22 @@ export const InSession = component(() => {
         return valueOf(session)?.id ?? '';
     }, [session]);
 
+    computed(() => {
+        const currentSessionId = valueOf(session)?.id;
+        if (!currentSessionId) return;
+        const unsubSession = dbListenToSession(currentSessionId, (newSession) => {
+            const oldParticipants = valueOf(session)?.participants;
+            const newParticipants = newSession.participants;
+            if (oldParticipants && newParticipants && oldParticipants.length !== newParticipants.length) {
+                console.log('User count changed', newParticipants.length);
+                session.set(newSession);
+            }
+        });
+        return () => {
+            unsubSession();
+        }
+    }, [session]);
+
     const playingState = computed(() => {
         const state = valueOf(queue)?.playing?.state;
         const lastUser = valueOf(queue)?.playing?.lastUser?.name;
@@ -39,21 +55,22 @@ export const InSession = component(() => {
     const onAdd = computed(async () => {
         const currentQueue = valueOf(queue);
         const sessionId = valueOf(session)?.id;
-        if (!currentQueue || !sessionId) return;
+        console.log('Adding to queue', currentQueue, sessionId);
+        if (!sessionId) return;
 
         const videoId = valueOf(window.location.href).match(/(?:\?v=|\/embed\/|\.be\/)([A-Za-z0-9_-]{11})/)?.[1];
         if (!videoId) return;
 
-        const alreadyInQueue = currentQueue.list.find(q => q.id === videoId);
+        const alreadyInQueue = (currentQueue?.list ?? []).find(q => q.id === videoId);
         if (alreadyInQueue) {
             alert('This video is already in the queue.');
             return;
         };
 
         const newQueue = {
-            playing: currentQueue.playing || { index: 0 },
+            playing: currentQueue?.playing || { index: 0 },
             list: [
-                ...currentQueue.list,
+                ...(currentQueue?.list ?? []),
                 {
                     user: valueOf(name) as string,
                     id: videoId,
@@ -79,7 +96,7 @@ export const InSession = component(() => {
 
         const unsubQueue = dbListenToQueue(currentSession.id, (newQueue) => {
             console.log('Queue updated', newQueue);
-            queue.set(newQueue);
+            if (newQueue) queue.set(newQueue);
         });
 
         return () => {

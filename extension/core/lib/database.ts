@@ -75,3 +75,10 @@ export const dbListenToQueue = (sessionId: string, callback: (queue: Queue) => v
         callback(snapshot.val() as Queue);
     });
 }
+
+export const dbListenToSession = (sessionId: string, callback: (session: Session) => void) => {
+    const sessionRef = ref(db, `sessions/${sessionId}/session`);
+    return onValue(sessionRef, (snapshot) => {
+        callback(snapshot.val() as Session);
+    });
+};

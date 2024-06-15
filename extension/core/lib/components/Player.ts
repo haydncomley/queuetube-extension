@@ -59,11 +59,7 @@ export const Player = component(() => {
 
             const onPlay = async () => {
                 const newQueue = valueOf(queue)!;
-                // Only send a play event if the video was seeking, or was last in a pause state
-                // const queueIsPlaying = valueOf(queue)?.playing?.state === 'playing';
-                // const videoIsPlaying = !embeddedVideo.paused;
-
-                if (valueOf(queue)?.playing?.seek !== embeddedVideo.currentTime || valueOf(queue)?.playing?.state === 'paused'){
+                    if (valueOf(queue)?.playing?.seek !== embeddedVideo.currentTime || valueOf(queue)?.playing?.state === 'paused'){
                     newQueue.playing = {
                         index: valueOf(queue)?.playing?.index || 0,
                         state: 'playing',
