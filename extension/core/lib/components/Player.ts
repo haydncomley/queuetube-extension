@@ -1,4 +1,5 @@
 import { component, computed, ref, render, state, valueOf } from "../../../_nice";
+import { dbUpdateQueue } from "../database";
 import { globalStore } from "../store";
 
 import styles from './Player.module.css';
@@ -6,7 +7,9 @@ import styles from './Player.module.css';
 const VIDEO_FETCH_TIMEOUT = 500;
 
 export const Player = component(() => {
+    const session = globalStore('session');
     const queue = globalStore('queue');
+    const user = globalStore('user');
     const embedRef = ref<HTMLIFrameElement>();
     const currentVideoId = state('');
 
@@ -21,6 +24,24 @@ export const Player = component(() => {
         if (videoId !== valueOf(currentVideoId)) {
             currentVideoId.set(videoId);
         }
+
+        const iframe = embedRef.get()
+
+        if (iframe && valueOf(queue)?.playing?.lastUser?.name !== valueOf(user)?.name) {
+            const embeddedVideo = iframe.contentDocument?.body.querySelector('video'); 
+            if (!embeddedVideo) return;
+            const isQueuePaused = valueOf(queue)?.playing?.state === 'paused';
+            const queueSeek = valueOf(queue)?.playing?.seek;
+            const isVideoPaused = embeddedVideo.paused;
+
+            if (queueSeek && queueSeek !== embeddedVideo.currentTime) embeddedVideo.currentTime = queueSeek;
+
+            if (isQueuePaused && !isVideoPaused) {
+                embeddedVideo.pause();
+            } else if (!isQueuePaused && isVideoPaused) {
+                embeddedVideo.play();
+            }
+        }
     }, [queue]);
 
     computed(() => {
@@ -34,38 +55,50 @@ export const Player = component(() => {
             if (!embeddedVideo) return setTimeout(attachListeners, VIDEO_FETCH_TIMEOUT);
 
             document.body.querySelector(`[data-video-id="${valueOf(currentVideoId)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+            const nextIndex = (valueOf(queue)?.playing?.index || 0) + 1;
 
-            const onPlay = () => {
-                queue.set({
-                    list: valueOf(queue)?.list || [],
-                    playing: {
+            const onPlay = async () => {
+                const newQueue = valueOf(queue)!;
+                // Only send a play event if the video was seeking, or was last in a pause state
+                // const queueIsPlaying = valueOf(queue)?.playing?.state === 'playing';
+                // const videoIsPlaying = !embeddedVideo.paused;
+
+                if (valueOf(queue)?.playing?.seek !== embeddedVideo.currentTime || valueOf(queue)?.playing?.state === 'paused'){
+                    newQueue.playing = {
                         index: valueOf(queue)?.playing?.index || 0,
-                        state: 'playing'
+                        state: 'playing',
+                        seek: embeddedVideo.currentTime,
+                        lastUser: valueOf(user),
                     }
-                });
+                    
+                    queue.set(await dbUpdateQueue(valueOf(session)?.id!, newQueue));
+                }
             }
 
-            const onPause = () => {
-                queue.set({
-                    list: valueOf(queue)?.list || [],
-                    playing: {
-                        index: valueOf(queue)?.playing?.index || 0,
-                        state: 'paused'
-                    }
-                });
+            const onPause = async () => {
+                if (embeddedVideo.seeking) return;
+                const newQueue = valueOf(queue)!;
+                newQueue.playing = {
+                    index: valueOf(queue)?.playing?.index || 0,
+                    state: 'paused',
+                    seek: embeddedVideo.currentTime,
+                    lastUser: valueOf(user),
+                }
+                
+                queue.set(await dbUpdateQueue(valueOf(session)?.id!, newQueue));
             }
 
-            const onEnded = () => {
+            const onEnded = async () => {
                 embeddedVideo.removeEventListener('play', onPlay);
                 embeddedVideo.removeEventListener('pause', onPause);
                 embeddedVideo.removeEventListener('ended', onEnded);
 
-                queue.set({
-                    list: valueOf(queue)?.list || [],
-                    playing: {
-                        index: (valueOf(queue)?.playing?.index || 0) + 1,
-                    }
-                });
+                const newQueue = valueOf(queue)!;
+                newQueue.playing = {
+                    index: nextIndex,
+                }
+                
+                queue.set(await dbUpdateQueue(valueOf(session)?.id!, newQueue));
             }
 
             embeddedVideo.addEventListener('play', onPlay);

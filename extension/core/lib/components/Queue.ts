@@ -10,7 +10,7 @@ export const Queue = component(() => {
     const queueItems = computed(() => {
         const currentQueue = valueOf(queue);
         if (!currentQueue?.list.length) return QueueItem({});
-        return mapper(currentQueue.list, (item) => QueueItem({ details: item }, item.id));
+        return mapper(currentQueue.list, (item) => QueueItem({ details: item }));
     }, [queue]);
 
 

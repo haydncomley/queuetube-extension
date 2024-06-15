@@ -1,6 +1,7 @@
 import { component, computed, render, state, valueOf } from "../../../_nice";
 import { Player } from "../components/Player";
 import { Queue } from "../components/Queue";
+import { dbLeaveSession, dbListenToQueue, dbUpdateQueue } from "../database";
 import { globalStore } from "../store";
 
 import styles from './InSession.module.css';
@@ -16,26 +17,29 @@ export const InSession = component(() => {
 
     const userCount = computed(() => {
         const currentSession = valueOf(session);
-        const count = (currentSession?.participants.length ?? 0) + 1;
+        const count = (currentSession?.participants.length ?? 1);
         if (count == 1) return "1 person";
         return `${count} people`;
     }, [session]);
 
     const sessionId = computed(() => {
-        return valueOf(session)?.id;
+        return valueOf(session)?.id ?? '';
     }, [session]);
 
     const playingState = computed(() => {
         const state = valueOf(queue)?.playing?.state;
+        const lastUser = valueOf(queue)?.playing?.lastUser?.name;
+        const prefix = lastUser ? `${lastUser} ` : '';
 
-        if (state === 'playing') return '- Playing...';
-        if (state === 'paused') return '- Paused.';
+        if (state === 'playing') return `- ${prefix}Playing...`;
+        if (state === 'paused') return `- ${prefix}Paused.`;
         return ''
     }, [queue]);
 
-    const onAdd = computed(() => {
+    const onAdd = computed(async () => {
         const currentQueue = valueOf(queue);
-        if (!currentQueue) return;
+        const sessionId = valueOf(session)?.id;
+        if (!currentQueue || !sessionId) return;
 
         const videoId = valueOf(window.location.href).match(/(?:\?v=|\/embed\/|\.be\/)([A-Za-z0-9_-]{11})/)?.[1];
         if (!videoId) return;
@@ -46,7 +50,7 @@ export const InSession = component(() => {
             return;
         };
 
-        queue.set({
+        const newQueue = {
             playing: currentQueue.playing || { index: 0 },
             list: [
                 ...currentQueue.list,
@@ -56,28 +60,32 @@ export const InSession = component(() => {
                     name: window.document.title.replace(' - YouTube', ''),
                 }
             ],
-        });
-    });
+        };
 
-    const onNext = computed(() => {
-        const currentQueue = valueOf(queue);
-        if (!currentQueue?.playing) return;
-
-        const nextIndex = currentQueue.playing.index + 1;
-        if (nextIndex >= currentQueue.list.length) return;
-
-        queue.set({
-            ...currentQueue,
-            playing: {
-                index: nextIndex
-            }
-        });
+        queue.set(await dbUpdateQueue(sessionId, newQueue));
     });
 
     const onQuit = computed(() => {
+        const currentSession = valueOf(session);
+        const currentUser = valueOf(user);
+        if (currentSession && currentUser) dbLeaveSession(currentSession?.id, currentUser);
         console.log('Leaving Session');
         session.set(undefined);
     });
+
+    computed(() => {
+        const currentSession = valueOf(session);
+        if (!currentSession) return;
+
+        const unsubQueue = dbListenToQueue(currentSession.id, (newQueue) => {
+            console.log('Queue updated', newQueue);
+            queue.set(newQueue);
+        });
+
+        return () => {
+            unsubQueue();
+        }
+    }, [session]);
 
     return render`
     <div class=${styles.inSession}>

@@ -22,6 +22,11 @@
   z-index: 999999;
   box-shadow: var(--shadow);
   font: var(--font-normal);
+  transition: 0.2s ease;
+
+  &:not(.qtRootOpen) {
+    transform: translateY(100%);
+  }
 
   @media (max-width: 800px) {
     right: var(--padding);
@@ -38,7 +43,7 @@
     padding: 0 1.6rem;
     height: 3.6rem;
     border: var(--border);
-    border-color: var(--background);
+    border-color: var(--color);
     border-radius: 5rem;
 
     &:hover {
@@ -57,5 +62,18 @@
     border: var(--border);
     border-radius: 5rem;
     font: var(--font-normal);
+  }
+}
+
+.toggle {
+  position: absolute;
+  bottom: 100%;
+  left: var(--border-radius);
+  border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+  transition: 0.2s ease;
+
+  .qtRootConnected & {
+    background: var(--yt-brand-youtube-red);
+    border-color: var(--yt-brand-youtube-red);
   }
 }

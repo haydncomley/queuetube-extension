@@ -1,4 +1,4 @@
-import { app, computed, render, valueOf } from '../_nice';
+import { app, computed, render, state, valueOf } from '../_nice';
 import styles from './index.module.css';
 import { InSession } from './lib/pages/InSession';
 import { NoSession } from './lib/pages/NoSession';
@@ -12,6 +12,8 @@ document.body.appendChild(root);
 app(() => {
     const user = globalStore('user');
     const session = globalStore('session');
+    const queue = globalStore('queue');
+    const isOpen = state(false);
 
     const currentPage = computed(() => {
         console.log('Re-rendering index', valueOf(user), valueOf(session));
@@ -39,10 +41,26 @@ app(() => {
     //         });
     //     }
     // }, [session]);
+
+    const toggleOpen = computed(() => {
+        isOpen.set(!valueOf(isOpen));
+    });
+
+    const toggleLabel = computed(() => {
+        return valueOf(isOpen) ? 'QT - Hide' : 'QT - Show';
+    }, [isOpen]);
+
+    const qtClasses = computed(() => {
+        return [styles.qtRoot, valueOf(isOpen) && styles.qtRootOpen, valueOf(session) && styles.qtRootConnected].join(' ');
+    }, [isOpen, session]);
     
 
     return render`
-    <section class=${styles.qtRoot}>
+    <section class=${qtClasses}>
+        <button on-click=${toggleOpen} class=${styles.toggle}>
+            ${toggleLabel}
+        </button>
+
         ${currentPage}
     </section>
     `;

@@ -13,18 +13,24 @@ export interface QueueRequest {
 export interface QueuePlaying {
     index: number;
     state?: 'playing' | 'paused';
+    seek?: number;
+    lastUser?: User;
+}
+
+export interface Session {
+    id: string;
+    participants: User[];
+}
+
+export interface Queue {
+    list: QueueRequest[];
+    playing?: QueuePlaying;
 }
 
 export const globalStore = store<{
     user?: User;
-    session?: {
-        id: string;
-        participants: User[];
-    };
-    queue?: {
-        playing?: QueuePlaying;
-        list: QueueRequest[]
-    }
+    session?: Session;
+    queue?: Queue;
 }>({
     user: undefined,
     session: undefined,
