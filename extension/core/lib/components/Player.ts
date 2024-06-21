@@ -5,83 +5,104 @@ import { globalStore } from "../store";
 import styles from './Player.module.css';
 
 const VIDEO_FETCH_TIMEOUT = 500;
+let LISTENER_TIMEOUTS:  NodeJS.Timeout[] = [];
 
 export const Player = component(() => {
-    const session = globalStore('session');
-    const queue = globalStore('queue');
-    const user = globalStore('user');
     const embedRef = ref<HTMLIFrameElement>();
-    const currentVideoId = state('');
 
-    computed(() => {
-        const playingIndex = valueOf(queue)?.playing?.index;
-        const list = valueOf(queue)?.list;
-        if(typeof playingIndex !== 'number' || !list) return;
-        if(!list.length) return;
-        
-        const videoId = list[playingIndex]?.id;
-
-        if (videoId !== valueOf(currentVideoId)) {
-            currentVideoId.set(videoId);
-        }
-
-        const iframe = embedRef.get()
-
-        if (iframe && valueOf(queue)?.playing?.lastUser?.name !== valueOf(user)?.name) {
-            const embeddedVideo = iframe.contentDocument?.body.querySelector('video'); 
-            if (!embeddedVideo) return;
-            const isQueuePaused = valueOf(queue)?.playing?.state === 'paused';
-            const queueSeek = valueOf(queue)?.playing?.seek;
-            const isVideoPaused = embeddedVideo.paused;
-
-            if (queueSeek && queueSeek !== embeddedVideo.currentTime) embeddedVideo.currentTime = queueSeek;
-
-            if (isQueuePaused && !isVideoPaused) {
-                embeddedVideo.pause();
-            } else if (!isQueuePaused && isVideoPaused) {
-                embeddedVideo.play();
-            }
-        }
-    }, [queue]);
+    const queue = globalStore('queue');
+    const session = globalStore('session');
+    const user = globalStore('user');
 
     computed(() => {
         const iframe = embedRef.get();
-        if (!iframe || !valueOf(currentVideoId)) return;
-        iframe.contentWindow?.location.replace(`https://www.youtube.com/embed/${valueOf(currentVideoId)}?autoplay=1&controls=1`);
+        if (!iframe) return;
+
+        const videoPlayer = iframe.contentDocument?.body.querySelector('video');
+        if (!videoPlayer) return;
+
+        const wantedQueue = valueOf(queue);
+        const list = wantedQueue?.list ?? [];
+        const playing = wantedQueue?.playing;
+
+        if (list.length === 0) return;
+
+        const wantedID = list[playing?.index || 0].id;
+        const wantedTime = playing?.seek || 0;
+        const isNewVideo = !iframe.src.includes(wantedID);
+
+        if (isNewVideo) return;
+
+        if (wantedTime !== videoPlayer.currentTime) videoPlayer.currentTime = wantedTime;
+        if (playing?.state === 'playing' && videoPlayer.paused) videoPlayer.play();
+        if (playing?.state === 'paused' && !videoPlayer.paused) videoPlayer.pause();
+    }, [queue, embedRef]);
+
+    computed(() => {
+        const iframe = embedRef.get();
+        if (!iframe) return;
+
+        const wantedQueue = valueOf(queue);
+        const list = wantedQueue?.list ?? [];
+        const playing = wantedQueue?.playing;
+
+        const wantedID = list[playing?.index || 0]?.id ?? '';
+        const wantedTime = playing?.seek || 0;
+        const isNewVideo = !iframe.src.includes(wantedID);
+        const nextIndex = (playing?.index || 0) + 1;
+
+        if (!wantedID) return;
+        if(isNewVideo) iframe.src = `https://www.youtube.com/embed/${wantedID}?autoplay=1&controls=1`;
+        else return;
 
         const attachListeners = () => {
-            if (!iframe?.contentDocument || !iframe.contentDocument.body) return setTimeout(attachListeners, VIDEO_FETCH_TIMEOUT);
+            if (!iframe?.contentDocument || !iframe.contentDocument.body) {
+                LISTENER_TIMEOUTS.push(setTimeout(attachListeners, VIDEO_FETCH_TIMEOUT));
+                return;
+            };
             const embeddedVideo = iframe.contentDocument.body.querySelector('video');
-            if (!embeddedVideo) return setTimeout(attachListeners, VIDEO_FETCH_TIMEOUT);
+            if (!embeddedVideo) {
+                LISTENER_TIMEOUTS.push(setTimeout(attachListeners, VIDEO_FETCH_TIMEOUT))
+                return;
+            };
 
-            document.body.querySelector(`[data-video-id="${valueOf(currentVideoId)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
-            const nextIndex = (valueOf(queue)?.playing?.index || 0) + 1;
+            document.body.querySelector(`[data-video-id="${wantedID}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+
+            LISTENER_TIMEOUTS.forEach(clearTimeout);
+            LISTENER_TIMEOUTS = [];
+
+            const isVideoSeeking = () => {
+                return embeddedVideo.seeking;
+            }
+
+            const isNetworkVideoPlaying = () => {
+                return valueOf(queue)?.playing?.state === 'playing';
+            }
 
             const onPlay = async () => {
-                const newQueue = valueOf(queue)!;
-                    if (valueOf(queue)?.playing?.seek !== embeddedVideo.currentTime || valueOf(queue)?.playing?.state === 'paused'){
+                if (!isNetworkVideoPlaying()) {
+                    const newQueue = valueOf(queue)!;
                     newQueue.playing = {
                         index: valueOf(queue)?.playing?.index || 0,
                         state: 'playing',
                         seek: embeddedVideo.currentTime,
                         lastUser: valueOf(user),
                     }
-                    
                     queue.set(await dbUpdateQueue(valueOf(session)?.id!, newQueue));
                 }
             }
 
             const onPause = async () => {
-                if (embeddedVideo.seeking) return;
-                const newQueue = valueOf(queue)!;
-                newQueue.playing = {
-                    index: valueOf(queue)?.playing?.index || 0,
-                    state: 'paused',
-                    seek: embeddedVideo.currentTime,
-                    lastUser: valueOf(user),
-                }
-                
-                queue.set(await dbUpdateQueue(valueOf(session)?.id!, newQueue));
+                if (!isVideoSeeking() && isNetworkVideoPlaying()) {
+                    const newQueue = valueOf(queue)!;
+                    newQueue.playing = {
+                        index: valueOf(queue)?.playing?.index || 0,
+                        state: 'paused',
+                        seek: embeddedVideo.currentTime,
+                        lastUser: valueOf(user),
+                    }
+                    queue.set(await dbUpdateQueue(valueOf(session)?.id!, newQueue));
+                };
             }
 
             const onEnded = async () => {
@@ -92,6 +113,8 @@ export const Player = component(() => {
                 const newQueue = valueOf(queue)!;
                 newQueue.playing = {
                     index: nextIndex,
+                    seek: 0,
+                    state: 'playing',                
                 }
                 
                 queue.set(await dbUpdateQueue(valueOf(session)?.id!, newQueue));
@@ -100,18 +123,20 @@ export const Player = component(() => {
             embeddedVideo.addEventListener('play', onPlay);
             embeddedVideo.addEventListener('pause', onPause);
             embeddedVideo.addEventListener('ended', onEnded);
-            onPlay();
+            embeddedVideo.currentTime = wantedTime;
+            if (isNetworkVideoPlaying()) embeddedVideo.play();
+            else embeddedVideo.pause();
         }
 
-        setTimeout(attachListeners, VIDEO_FETCH_TIMEOUT);
-    }, [currentVideoId, embedRef])
+        LISTENER_TIMEOUTS.push(setTimeout(attachListeners, VIDEO_FETCH_TIMEOUT));
+    }, [embedRef, queue]);
 
     const playerClasses = computed(() => {
         return [
             styles.player,
-            !valueOf(currentVideoId) ? styles.playerInActive : ''
+            !valueOf(queue)?.playing ? styles.playerInActive : ''
         ].join(' ');
-    }, [currentVideoId]);
+    }, [queue]);
 
     return render`
     <div class=${playerClasses}>

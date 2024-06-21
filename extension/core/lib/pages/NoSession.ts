@@ -29,9 +29,6 @@ export const NoSession = component(() => {
         const sessionDetails = await dbCreateOrJoinSession(valueOf(sessionId), currentUser);
         const queueDetails = await dbGetQueue(sessionDetails.id);
     
-
-        console.log('Session details', sessionDetails, queueDetails);
-
         isLoading.set(false);
 
         queue.set(queueDetails);

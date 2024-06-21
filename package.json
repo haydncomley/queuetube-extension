@@ -1,7 +1,8 @@
 {
   "scripts": {
     "dev": "nodemon --watch extension -e ts,module.css --exec \"yarn build\"",
-    "build": "esbuild ./extension/core/index.ts --bundle --minify --outfile=\"./extension/core/index.js\" --platform=browser"
+    "build": "yarn build:app",
+    "build:app": "esbuild ./extension/core/index.ts --bundle --minify --outfile=\"./build/index.js\" --platform=browser"
   },
   "devDependencies": {
     "esbuild": "^0.21.5",

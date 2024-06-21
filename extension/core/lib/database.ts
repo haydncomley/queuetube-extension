@@ -1,4 +1,4 @@
-import { getDatabase, set, ref, get, onValue } from "firebase/database";
+import { getDatabase, set, ref, get, onValue, onDisconnect, Unsubscribe, remove } from "firebase/database";
 import { Queue, Session, User } from "./store";
 
 import { initializeApp } from "firebase/app";
@@ -16,44 +16,39 @@ const firebaseConfig = {
 export const firebaseApp = initializeApp(firebaseConfig);
 
 const db = getDatabase();
+let unsubSession: Unsubscribe;
 
 export const dbCreateOrJoinSession = async (sessionId: string, user: User) => {
-    console.log('Create or join');
     const sessionRef = ref(db, `sessions/${sessionId}/session`);
     const sessionSnapshot = await get(sessionRef);
+    const id  = user.name.replace(/\s/g,'');
 
     let session: Session = {
         id: sessionId,
-        participants: [],
+        participants: {},
     };
 
     if (sessionSnapshot.exists()) {
-        console.log('Session exists', sessionSnapshot.val());
         session = {
             ...session,
             ...sessionSnapshot.val()
         };
-        
-        const uniqueUsers = new Set(session.participants.map(p => p.name));
-        if (!uniqueUsers.has(user.name)) session.participants.push(user);
+
+        session.participants[id] = user;
         set(sessionRef, session);
     } else {
-        console.log('Session does not exist');
-        session.participants.push(user);
+        session.participants[id] = user;
         await set(sessionRef,  session);
     }
     
-    console.log('Session details', session);
     return session;
 }
 
 export const dbLeaveSession = async (sessionId: string, user: User) => {
-    const sessionRef = ref(db, `sessions/${sessionId}/session`);
-    const sessionSnapshot = await get(sessionRef);
-    const session = sessionSnapshot.val();
-    session.participants = session.participants.filter(p => p.name !== user.name);
-    
-    await set(sessionRef, session.participants.length ? session : null);
+    unsubSession();
+    const id  = user.name.replace(/\s/g,'');
+    const sessionUserRef = ref(db, `sessions/${sessionId}/session/participants/${id}`);
+    remove(sessionUserRef);
 }
 
 export const dbUpdateQueue = async (sessionId: string, queue: Queue) => {
@@ -76,9 +71,18 @@ export const dbListenToQueue = (sessionId: string, callback: (queue: Queue) => v
     });
 }
 
-export const dbListenToSession = (sessionId: string, callback: (session: Session) => void) => {
+export const dbListenToSession = (sessionId: string, name: string, callback: (session: Session) => void) => {
     const sessionRef = ref(db, `sessions/${sessionId}/session`);
-    return onValue(sessionRef, (snapshot) => {
+    const id  = name.replace(/\s/g,'');
+
+    const sessionUserRef = ref(db, `sessions/${sessionId}/session/participants/${id}`);
+    set(sessionUserRef, {
+        name: name
+    });
+    onDisconnect(sessionUserRef).remove();
+    unsubSession = onValue(sessionRef, (snapshot) => {
         callback(snapshot.val() as Session);
     });
+
+    return unsubSession;
 };

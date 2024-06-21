@@ -19,7 +19,7 @@ export interface QueuePlaying {
 
 export interface Session {
     id: string;
-    participants: User[];
+    participants: Record<string, User>;
 }
 
 export interface Queue {

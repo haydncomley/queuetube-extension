@@ -1,0 +1,14 @@
+{
+    "version": "2.0.2",
+    "compilerOptions": {
+        "lib": ["ESNext", "dom"],
+        "target": "ESNext",
+        "typeRoots": [
+          "node_modules/@types"
+        ],
+        "moduleResolution": "NodeNext"
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}

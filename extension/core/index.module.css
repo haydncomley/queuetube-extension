@@ -2,13 +2,19 @@
   --padding: 1.2rem;
   --color: var(--yt-spec-text-primary);
   --background: var(--yt-spec-base-background);
+  --background-hover: #272727;
   --background-alt: var(--yt-spec-badge-chip-background);
   --shadow: 0 4px 32px 0 var(--yt-spec-static-overlay-background-light);
   --border-radius: 1.2rem;
-  --gap: calc(var(--border-radius) * 0.5);
-  --border: 1px solid rgba(0, 0, 0, 0.1);
+  --border-colour: var(--yt-spec-outline);
+  --gap: calc(var(--border-radius) * 0.75);
+  --border: 1px solid var(--border-colour);
   --font-normal: 400 1.4rem "Roboto", "Arial", sans-serif;
   --font-title: 500 1.4rem "Roboto", "Arial", sans-serif;
+
+  :global(html[dark]) & {
+    --background-hover: #d9d9d9;
+  }
 
   position: fixed;
   bottom: 0;
@@ -48,6 +54,7 @@
 
     &:hover {
       cursor: pointer;
+      background-color: var(--background-hover);
     }
 
     &:disabled {
@@ -62,6 +69,9 @@
     border: var(--border);
     border-radius: 5rem;
     font: var(--font-normal);
+    background: var(--background);
+    border: var(--border);
+    color: var(--color);
   }
 }
 
@@ -75,5 +85,9 @@
   .qtRootConnected & {
     background: var(--yt-brand-youtube-red);
     border-color: var(--yt-brand-youtube-red);
+
+    &:hover {
+      background: var(--yt-brand-medium-red);
+    }
   }
 }

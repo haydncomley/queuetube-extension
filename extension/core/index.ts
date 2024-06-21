@@ -12,46 +12,28 @@ document.body.appendChild(root);
 app(() => {
     const user = globalStore('user');
     const session = globalStore('session');
-    const queue = globalStore('queue');
     const isOpen = state(false);
 
     const currentPage = computed(() => {
-        console.log('Re-rendering index', valueOf(user), valueOf(session));
         if (!valueOf(user)) return NoUser();
         if (!valueOf(session)) return NoSession();
         return InSession();
     }, [user, session]);
-
-    // TODO: Add into the URL the session ID for sharing
-    // computed(() => {
-    //     const urlParams = new URLSearchParams(window.location.search);
-    //     const sessionParam = urlParams.get('session');
-    //     const sessionStored = valueOf(session)?.id;
-
-    //     if (sessionStored && !sessionParam) {
-    //         urlParams.set('session', sessionStored);
-    //         window.location.search = urlParams.toString();
-    //         return;
-    //     }
-
-    //     if (sessionParam && !sessionStored) {
-    //         session.set({
-    //             id: sessionParam,
-    //             queue: [],
-    //         });
-    //     }
-    // }, [session]);
 
     const toggleOpen = computed(() => {
         isOpen.set(!valueOf(isOpen));
     });
 
     const toggleLabel = computed(() => {
-        return valueOf(isOpen) ? 'QT - Hide' : 'QT - Show';
+        return valueOf(isOpen) ? 'Hide' : 'Queue';
     }, [isOpen]);
 
     const qtClasses = computed(() => {
-        return [styles.qtRoot, valueOf(isOpen) && styles.qtRootOpen, valueOf(session) && styles.qtRootConnected].join(' ');
+        return [
+            styles.qtRoot,
+            valueOf(isOpen) && styles.qtRootOpen,
+            valueOf(session) && styles.qtRootConnected,
+        ].join(' ');
     }, [isOpen, session]);
     
 

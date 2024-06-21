@@ -1,31 +1,23 @@
 {
     "manifest_version": 3,
     "name": "QueueTube",
-    "description": "Basically just Discords YouTube queue app, but better.",
+    "description": "Queue up videos with your friends and watch together live!",
     "version": "0.0.1",
     "icons": {
         "16": "assets/logo-16.png",
         "48": "assets/logo-48.png",
         "128": "assets/logo-128.png"
     },
-    "options_page": "extension/options/options.html",
-    "action": {
-        "default_title": "QueueTube",
-        "default_popup": "extension/action/action.html"
-    },
     "permissions": [],
     "host_permissions": [
         "*://*/*"
     ],
-    "background": {
-        "service_worker": "extension/core/service-worker.js"
-    },
     "content_scripts": [{
-        "js": ["extension/core/index.js"],
-        "css": ["extension/core/index.css"],
+        "js": ["build/index.js"],
+        "css": ["build/index.css"],
         "matches": [
-            "https://youtube.com/watch*",
-            "https://www.youtube.com/watch*"
+            "https://youtube.com/*",
+            "https://www.youtube.com/*"
         ]
     }]
 }

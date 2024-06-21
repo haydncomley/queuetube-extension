@@ -1,8 +1,9 @@
 import { component, computed, render, valueOf, Prop } from "../../../_nice";
-import { globalStore } from "../store";
+import { Queue, globalStore } from "../store";
 import { QueueRequest } from "../../lib/store";
 
 import styles from './QueueItem.module.css';
+import { dbUpdateQueue } from "../database";
 
 const MAX_NAME_LENGTH = 35;
 
@@ -10,6 +11,8 @@ export const QueueItem = component<{
     details?: Prop<QueueRequest> 
 }>(({ details }) => {
     const queue = globalStore('queue');
+    const session = globalStore('session');
+    const user = globalStore('user');
 
     const name = computed(() => {
         if (!details) return 'Queue Empty';
@@ -49,13 +52,18 @@ export const QueueItem = component<{
         return classes.join(' ');
     }, [queue, videoIndex]);
 
-    const onClick = computed(() => {
-        queue.set({
+    const onClick = computed(async () => {
+        const newQueue: Queue = {
             list: valueOf(queue)?.list || [],
             playing: {
-                index: valueOf(videoIndex)
+                index: valueOf(videoIndex),
+                seek: 0,
+                state: 'playing',
+                lastUser: valueOf(user),
             }
-        });
+        };
+        
+        queue.set(await dbUpdateQueue(valueOf(session)?.id!, newQueue));
     });
 
     return render`

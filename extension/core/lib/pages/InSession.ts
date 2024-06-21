@@ -17,7 +17,7 @@ export const InSession = component(() => {
 
     const userCount = computed(() => {
         const currentSession = valueOf(session);
-        const count = (currentSession?.participants.length ?? 1);
+        const count = (Object.keys(currentSession?.participants ?? {}).length ?? 1);
         if (count == 1) return "1 person";
         return `${count} people`;
     }, [session]);
@@ -29,11 +29,10 @@ export const InSession = component(() => {
     computed(() => {
         const currentSessionId = valueOf(session)?.id;
         if (!currentSessionId) return;
-        const unsubSession = dbListenToSession(currentSessionId, (newSession) => {
-            const oldParticipants = valueOf(session)?.participants;
-            const newParticipants = newSession.participants;
-            if (oldParticipants && newParticipants && oldParticipants.length !== newParticipants.length) {
-                console.log('User count changed', newParticipants.length);
+        const unsubSession = dbListenToSession(currentSessionId, valueOf(name), (newSession) => {
+            const oldParticipants = Object.keys(valueOf(session)?.participants ?? {}).length;
+            const newParticipants = Object.keys(newSession.participants).length;
+            if (oldParticipants && newParticipants && oldParticipants !== newParticipants) {
                 session.set(newSession);
             }
         });
@@ -55,7 +54,6 @@ export const InSession = component(() => {
     const onAdd = computed(async () => {
         const currentQueue = valueOf(queue);
         const sessionId = valueOf(session)?.id;
-        console.log('Adding to queue', currentQueue, sessionId);
         if (!sessionId) return;
 
         const videoId = valueOf(window.location.href).match(/(?:\?v=|\/embed\/|\.be\/)([A-Za-z0-9_-]{11})/)?.[1];
@@ -86,7 +84,6 @@ export const InSession = component(() => {
         const currentSession = valueOf(session);
         const currentUser = valueOf(user);
         if (currentSession && currentUser) dbLeaveSession(currentSession?.id, currentUser);
-        console.log('Leaving Session');
         session.set(undefined);
     });
 
@@ -95,8 +92,9 @@ export const InSession = component(() => {
         if (!currentSession) return;
 
         const unsubQueue = dbListenToQueue(currentSession.id, (newQueue) => {
-            console.log('Queue updated', newQueue);
-            if (newQueue) queue.set(newQueue);
+            if (newQueue && newQueue.playing?.lastUser?.name !== valueOf(name)) {
+                queue.set(newQueue);
+            };
         });
 
         return () => {
